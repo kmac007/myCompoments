@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Carousel</title>
+  <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    ul,
+    li {
+      list-style: none;
+    }
+
+    #carousel {
+      margin: 15px auto;
+      position: relative;
+      overflow: hidden;
+      width: 790px;
+      height: 340px;
+    }
+
+    #carousel::after {
+      content: '';
+      display: block;
+      clear: both;
+    }
+
+    .img-ct {
+      position: absolute;
+      left: 0;
+    }
+
+    .img-ct li {
+      float: left;
+    }
+
+    .img-ct li img {
+      width: 790px;
+      height: 340px;
+    }
+
+    .playPre {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      height: 50px;
+      margin-top: -25px;
+      width: 30px;
+      color: #444;
+      line-height: 50px;
+      text-align: center;
+      font-size: 20px;
+      cursor: pointer;
+      opacity: .6;
+      background-color: #ccc;
+      z-index: 1;
+    }
+
+    .playNext {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      height: 50px;
+      margin-top: -25px;
+      width: 30px;
+      color: #444;
+      line-height: 50px;
+      text-align: center;
+      font-size: 20px;
+      cursor: pointer;
+      opacity: 0.6;
+      background-color: #ccc;
+      z-index: 1;
+    }
+
+    .playPre:hover,
+    .playNext:hover {
+      opacity: .9;
+    }
+
+    .bullet {
+      position: absolute;
+      z-index: 1;
+      bottom: 15px;
+      left: 50%;
+      margin-left: -60px;
+    }
+
+    .bullet>li {
+      width: 10px;
+      height: 10px;
+      border-radius: 100%;
+      background-color: #fff;
+      float: left;
+      margin: 0 10px;
+      cursor: pointer;
+    }
+
+    .bullet>li.active {
+      background-color: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container"></div>
+  <div class="container2"></div>
+  <script>
+    // 传入轮播图的信息
+    var infoList = [{
+        url: '#',
+        imgSrc: "https://img13.360buyimg.com/da/jfs/t6523/341/824411132/107598/9e0c0471/5944e2a2N1dbd6ab0.jpg"
+      },
+      {
+        url: '#',
+        imgSrc: "https://img10.360buyimg.com/da/jfs/t5605/218/3703527351/96712/8d910da2/594204e7Necf27dfe.jpg"
+      },
+      {
+        url: '#',
+        imgSrc: "https://img12.360buyimg.com/da/jfs/t6052/341/2742126351/72451/b5aa6d7/5945252bN141eed38.jpg"
+      },
+      {
+        url: '#',
+        imgSrc: "https://img12.360buyimg.com/da/jfs/t5779/306/3761419882/121798/e8b4bb9c/59421ed2Ne982edad.jpg"
+      }
+    ]
+    // Carousel可传如两个参数，$ct为容器，infoList为轮播图信息（url与img.src）
+    function Carousel($ct, infoList) {
+      this.ct = $ct
+      this.isAnimate = false
+      this.pageIndex = 0
+      this.render(infoList)
+      this.init()
+      this.bind()
+      this.autoPlay()
+    }
+    // 渲染dom节点
+    Carousel.prototype.render = function (infoList) {
+      var arr = ['<div id="carousel"><ul class="img-ct">']
+      $.each(infoList, function (index, info) {
+        arr.push('<li><a href="' + info.url + '"><img src="' + info.imgSrc + '"></a></li>')
+      })
+      arr.push('</ul><div class = "playPre"><</div><div class="playNext">></div><ul class="bullet">')
+      $.each(infoList, function (idx, info) {
+        arr.push("<li></li>")
+      })
+      arr.push("</ul></div>")
+      var renderDom = arr.join('')
+      this.ct.append($(renderDom))
+      this.ct.find(".bullet li").eq(0).addClass("active")
+    }
+    //初始化参数
+    Carousel.prototype.init = function () {
+      var $imgCt = this.ct.find('.img-ct'),
+        $imgs = this.ct.find('.img-ct li'),
+        imgsCount = $imgs.length,
+        imgWidth = $imgs.eq(0).width()
+
+      $imgCt.append($imgs.eq(0).clone())
+      $imgCt.prepend($imgs.last().clone())
+      $imgCt.width((imgsCount + 2) * imgWidth)
+      $imgCt.css({
+        left: -imgWidth
+      })
+
+      this.imgCt = $imgCt
+      this.imgs = $imgs
+      this.imgsCount = imgsCount
+      this.imgWidth = imgWidth
+    }
+    // 绑定事件
+    Carousel.prototype.bind = function () {
+      var _this = this
+      this.ct.find(".playNext").on('click', function () {
+        _this.playNext(1)
+      })
+
+      this.ct.find(".playPre").on('click', function () {
+        _this.playPre(1)
+      })
+
+      this.ct.find(".bullet li").on('click', function () {
+        var index = $(this).index()
+        if (index > _this.pageIndex) {
+          _this.playNext(index - _this.pageIndex)
+        } else if (_this.pageIndex > index) {
+          _this.playPre(_this.pageIndex - index)
+        }
+      })
+    }
+    // 向后播放
+    Carousel.prototype.playNext = function (len) {
+      var _this = this
+      if (this.isAnimate) return
+      this.isAnimate = true
+      this.imgCt.animate({
+        left: "-=" + len * _this.imgWidth
+      }, function () {
+        _this.pageIndex += len
+        if (_this.pageIndex === _this.imgsCount) {
+          _this.pageIndex = 0
+          _this.imgCt.css({
+            left: -_this.imgWidth
+          })
+        }
+        _this.isAnimate = false
+        _this.setBullet()
+      })
+    }
+    // 向前播放
+    Carousel.prototype.playPre = function (len) {
+      var _this = this
+      if (this.isAnimate) return
+      this.isAnimate = true
+      this.imgCt.animate({
+        left: "+=" + len * _this.imgWidth
+      }, function () {
+        _this.pageIndex -= len
+        if (_this.pageIndex < 0) {
+          _this.pageIndex = _this.imgsCount - 1
+          _this.imgCt.css({
+            left: -_this.imgsCount * _this.imgWidth
+          })
+        }
+        _this.isAnimate = false
+        _this.setBullet()
+      })
+    }
+    // 设置轮播图下部导航标
+    Carousel.prototype.setBullet = function () {
+      this.ct.find('.bullet li').removeClass('active').eq(this.pageIndex).addClass('active')
+    }
+    Carousel.prototype.autoPlay = function () {
+      var _this = this
+      setInterval(function () {
+        _this.playNext(1)
+      }, 3000)
+    }
+    var carousel1 = new Carousel($(".container"), infoList)
+    var carousel2 = new Carousel($(".container2"), infoList)
+  </script>
+</body>
+
+</html>
