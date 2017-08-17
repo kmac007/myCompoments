@@ -1,2 +1,2 @@
-# myCompoments
-This is a repository of compoments i wrote.
+# myComponents
+This is a repository of components i wrote.
